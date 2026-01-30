@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card as CardComponent } from './Card';
 import { CardModal } from './CardModal';
 import type { Column as ColumnType, Card } from '@/lib/types';
+import { SortableContext } from '@dnd-kit/sortable';
+import { useDroppable } from '@dnd-kit/core';
 
 interface ColumnProps {
   column: ColumnType;
@@ -16,6 +18,10 @@ interface ColumnProps {
 export function Column({ column, cards }: ColumnProps) {
   const [showModal, setShowModal] = useState(false);
   const queryClient = useQueryClient();
+  
+  // droppable id for dnd-kit
+  const containerId = `column-${column.id}`;
+  const { setNodeRef, isOver } = useDroppable({ id: containerId });
 
   const handleAddCard = async (title: string, description: string, dueDate: string) => {
     const {
@@ -83,18 +89,27 @@ export function Column({ column, cards }: ColumnProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4">
+    <div
+      ref={setNodeRef as any}
+      data-column-id={column.id}
+      id={containerId}
+      className={`bg-white rounded-lg shadow-md p-4 transition-all ${
+        isOver ? 'ring-2 ring-indigo-300 bg-indigo-50' : ''
+      }`}
+    >
       <h2 className="text-lg font-semibold text-gray-800 mb-4">{column.title}</h2>
 
-      <div className="space-y-3 min-h-96">
-        {cards.map((card) => (
-          <CardComponent
-            key={card.id}
-            card={card}
-            onDelete={() => handleDeleteCard(card.id)}
-          />
-        ))}
-      </div>
+      <SortableContext items={cards.map((c) => `card-${c.id}`)}>
+        <div className="space-y-3 min-h-96" aria-labelledby={containerId}>
+          {cards.map((card) => (
+            <CardComponent
+              key={card.id}
+              card={card}
+              onDelete={() => handleDeleteCard(card.id)}
+            />
+          ))}
+        </div>
+      </SortableContext>
 
       <div className="mt-4 pt-4 border-t">
         <Button

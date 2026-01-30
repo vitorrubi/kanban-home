@@ -1,10 +1,21 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Column } from './Column';
 import type { Column as ColumnType, Card } from '@/lib/types';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverEvent,
+} from '@dnd-kit/core';
+import { SortableContext, arrayMove } from '@dnd-kit/sortable';
+import { computeReorder } from '@/lib/reorder';
 
 export function Board() {
   const [boardId, setBoardId] = useState<string | null>(null);
@@ -50,39 +61,132 @@ export function Board() {
     enabled: !!boardId,
   });
 
-  // Subscribe to real-time updates
-  useEffect(() => {
-    if (!boardId) return;
+  // Build container -> item mapping for dnd-kit
+  const containers: Record<string, string[]> = {};
+  (columns as ColumnType[]).forEach((col) => {
+    containers[col.id] = (cards as Card[])
+      .filter((c) => c.column_id === col.id)
+      .map((c) => `card-${c.id}`);
+  });
 
-    const subscription = supabase
-      .channel('cards_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'cards' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['cards', boardId] });
+  const sensors = useSensors(useSensor(PointerSensor));
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    // derive active card id and destination column id
+    const activeCardId = activeId.replace('card-', '');
+
+    let destColumnId: string | null = null;
+    if (overId.startsWith('card-')) {
+      const overCardId = overId.replace('card-', '');
+      const overCard = (cards as Card[]).find((c) => c.id === overCardId);
+      destColumnId = overCard ? overCard.column_id : null;
+    } else if (overId.startsWith('column-')) {
+      destColumnId = overId.replace('column-', '');
+    }
+
+    if (!destColumnId) return;
+
+    const activeCard = (cards as Card[]).find((c) => c.id === activeCardId);
+    if (!activeCard) return;
+
+    const srcColumnId = activeCard.column_id;
+    // compute necessary updates for positions and columns
+    console.log('[dnd] dragEnd active:', activeId, 'over:', overId);
+    const updates = computeReorder(cards as Card[], activeCardId, overId);
+    if (!updates || Object.keys(updates).length === 0) return;
+
+    // optimistic update: apply set of updates locally
+    queryClient.setQueryData(['cards', boardId], (old: any) => {
+      if (!old) return old;
+      const map = updates;
+      return (old as Card[]).map((c) => {
+        if (map[c.id]) {
+          return { ...c, column_id: map[c.id].column_id, position: map[c.id].position };
         }
-      )
-      .subscribe();
+        return c;
+      });
+    });
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [boardId, queryClient]);
+    // persist all updates
+    try {
+      const promises: Promise<any>[] = [];
+      for (const [cardId, change] of Object.entries(updates)) {
+        promises.push(
+          (supabase.from('cards') as any).update({ column_id: change.column_id, position: change.position } as any).eq('id', cardId)
+        );
+      }
+      await Promise.all(promises);
+
+      // add history entry for moved card if column changed, otherwise 'reordered'
+      const movedTo = updates[activeCardId]?.column_id;
+      const action = movedTo && movedTo !== srcColumnId ? 'moved' : 'reordered';
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('card_history').insert([
+          {
+            card_id: activeCardId,
+            user_id: user.id,
+            user_email: user.email || '',
+            action,
+            from_column_id: srcColumnId,
+            to_column_id: updates[activeCardId]?.column_id || srcColumnId,
+          },
+        ] as any);
+      }
+    } catch (e) {
+      queryClient.invalidateQueries({ queryKey: ['cards', boardId] });
+    } finally {
+      queryClient.invalidateQueries({ queryKey: ['cards', boardId] });
+    }
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    const activeCardId = activeId.replace('card-', '');
+
+    // compute tentative updates and apply locally for visual feedback
+    console.log('[dnd] dragOver active:', activeId, 'over:', overId);
+    const updates = computeReorder(cards as Card[], activeCardId, overId);
+    if (!updates || Object.keys(updates).length === 0) return;
+
+    queryClient.setQueryData(['cards', boardId], (old: any) => {
+      if (!old) return old;
+      const map = updates;
+      return (old as Card[]).map((c) => {
+        if (map[c.id]) {
+          return { ...c, column_id: map[c.id].column_id, position: map[c.id].position };
+        }
+        return c;
+      });
+    });
+  };
 
   if (isLoading) {
     return <div>Loading board...</div>;
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {(columns as ColumnType[]).map((column) => (
-        <Column
-          key={column.id}
-          column={column}
-          cards={(cards as Card[]).filter((c) => c.column_id === column.id)}
-        />
-      ))}
-    </div>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} onDragOver={handleDragOver}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {(columns as ColumnType[]).map((column) => (
+          <Column
+            key={column.id}
+            column={column}
+            cards={(cards as Card[]).filter((c) => c.column_id === column.id)}
+          />
+        ))}
+      </div>
+    </DndContext>
   );
 }
