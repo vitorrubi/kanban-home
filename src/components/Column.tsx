@@ -41,20 +41,20 @@ export function Column({ column, cards }: ColumnProps) {
           due_date: dueDate || null,
           position: cards.length,
         },
-      ] as any)
+      ])
       .select()
       .single();
 
     if (newCard) {
       await supabase.from('card_history').insert([
         {
-          card_id: (newCard as any).id,
+          card_id: newCard.id,
           user_id: user.id,
           user_email: user.email || '',
           action: 'created',
           to_column_id: column.id,
         },
-      ] as any);
+      ]);
 
       queryClient.invalidateQueries({ queryKey: ['cards'] });
     }
@@ -83,14 +83,14 @@ export function Column({ column, cards }: ColumnProps) {
         from_column_id: column.id,
         changes: { title: card.title, description: card.description },
       },
-    ] as any);
+    ]);
 
     queryClient.invalidateQueries({ queryKey: ['cards'] });
   };
 
   return (
     <div
-      ref={setNodeRef as any}
+      ref={setNodeRef}
       data-column-id={column.id}
       id={containerId}
       className={`bg-white rounded-lg shadow-md p-4 transition-all ${

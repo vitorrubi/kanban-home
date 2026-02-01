@@ -35,9 +35,7 @@ export function useMoveCard() {
 
       if (!user) throw new Error('Not authenticated');
 
-      const { error } = await (supabase.from('cards') as any)
-        .update({ column_id: newColumnId } as any)
-        .eq('id', cardId);
+      const { error } = await supabase.from('cards').update({ column_id: newColumnId }).eq('id', cardId);
 
       if (error) throw error;
 
@@ -50,7 +48,7 @@ export function useMoveCard() {
           from_column_id: oldColumnId,
           to_column_id: newColumnId,
         },
-      ] as any);
+      ]);
     },
   });
 }

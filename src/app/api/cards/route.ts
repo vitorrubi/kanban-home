@@ -27,33 +27,31 @@ export async function POST(request: NextRequest) {
     const { title, description, due_date, column_id, board_id, position } =
       body;
 
-    const { data: newCard, error } = await supabase
-      .from('cards')
-      .insert([
-        {
-          title,
-          description,
-          due_date,
-          column_id,
-          board_id,
-          position: position || 0,
-        },
-      ] as any)
-      .select()
-      .single();
+    const payload = [
+      {
+        title,
+        description,
+        due_date,
+        column_id,
+        board_id,
+        position: position || 0,
+      },
+    ];
+
+    const { data: newCard, error } = await supabase.from('cards').insert(payload as any).select().single();
 
     if (error) throw error;
 
     // Log history
     await supabase.from('card_history').insert([
       {
-        card_id: (newCard as any).id,
+        card_id: newCard!.id,
         user_id: user.id,
         user_email: user.email || '',
         action: 'created',
         to_column_id: column_id,
       },
-    ] as any);
+    ]);
 
     return NextResponse.json(newCard);
   } catch (error) {
@@ -77,19 +75,14 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const { id, column_id, from_column_id, title, description, due_date, position } = body;
 
-    const updateData: any = {};
+    const updateData: Record<string, any> = {};
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
     if (due_date !== undefined) updateData.due_date = due_date;
     if (position !== undefined) updateData.position = position;
     if (column_id !== undefined) updateData.column_id = column_id;
 
-    const { data: updatedCard, error } = (await (supabase
-      .from('cards') as any)
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single()) as any;
+    const { data: updatedCard, error } = await supabase.from('cards').update(updateData).eq('id', id).select().single();
 
     if (error) throw error;
 
@@ -104,10 +97,10 @@ export async function PATCH(request: NextRequest) {
           from_column_id,
           to_column_id: column_id,
         },
-      ] as any);
+      ]);
     }
 
-    return NextResponse.json(updatedCard as any);
+    return NextResponse.json(updatedCard);
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to update card' },

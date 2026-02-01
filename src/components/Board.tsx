@@ -25,8 +25,8 @@ export function Board() {
   useEffect(() => {
     const fetchBoard = async () => {
       const { data } = await supabase.from('boards').select('id').limit(1);
-      if (data && (data as any).length > 0) {
-        setBoardId((data as any)[0].id);
+      if (data && data.length > 0) {
+        setBoardId(data[0].id);
       }
     };
     fetchBoard();
@@ -117,8 +117,9 @@ export function Board() {
     try {
       const promises: Promise<any>[] = [];
       for (const [cardId, change] of Object.entries(updates)) {
+        // cast builder to Promise to satisfy TypeScript (builder is thenable at runtime)
         promises.push(
-          (supabase.from('cards') as any).update({ column_id: change.column_id, position: change.position } as any).eq('id', cardId)
+          (supabase.from('cards').update({ column_id: change.column_id, position: change.position }).eq('id', cardId) as unknown) as Promise<any>
         );
       }
       await Promise.all(promises);
@@ -137,7 +138,7 @@ export function Board() {
             from_column_id: srcColumnId,
             to_column_id: updates[activeCardId]?.column_id || srcColumnId,
           },
-        ] as any);
+        ]);
       }
     } catch (e) {
       queryClient.invalidateQueries({ queryKey: ['cards', boardId] });
