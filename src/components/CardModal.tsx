@@ -35,36 +35,36 @@ export function CardModal({ open, onClose, onSave }: CardModalProps) {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add New Card</DialogTitle>
+          <DialogTitle>Adicionar novo cartão</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Title
+              Título
             </label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Card title..."
+              placeholder="Título do cartão..."
               autoFocus
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
+              Descrição
             </label>
             <Input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Card description..."
+              placeholder="Descrição do cartão..."
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Due Date
+              Data de vencimento
             </label>
             <Input
               type="date"
@@ -76,9 +76,9 @@ export function CardModal({ open, onClose, onSave }: CardModalProps) {
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            Cancelar
           </Button>
-          <Button onClick={handleSave}>Add Card</Button>
+          <Button onClick={handleSave}>Adicionar cartão</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

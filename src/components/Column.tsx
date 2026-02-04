@@ -16,6 +16,11 @@ interface ColumnProps {
 }
 
 export function Column({ column, cards }: ColumnProps) {
+  const labelMap: Record<string, string> = {
+    'To Do': 'A Fazer',
+    'Doing': 'Em Progresso',
+    'Done': 'Concluído',
+  };
   const [showModal, setShowModal] = useState(false);
   const queryClient = useQueryClient();
   
@@ -97,7 +102,7 @@ export function Column({ column, cards }: ColumnProps) {
         isOver ? 'ring-2 ring-indigo-300 bg-indigo-50' : ''
       }`}
     >
-      <h2 className="text-lg font-semibold text-gray-800 mb-4">{column.title}</h2>
+      <h2 className="text-lg font-semibold text-gray-800 mb-4">{labelMap[column.title] ?? column.title}</h2>
 
       <SortableContext items={cards.map((c) => `card-${c.id}`)}>
         <div className="space-y-3 min-h-96" aria-labelledby={containerId}>
@@ -117,7 +122,7 @@ export function Column({ column, cards }: ColumnProps) {
           className="w-full"
           variant="outline"
         >
-          + Add Card
+          + Adicionar cartão
         </Button>
       </div>
 

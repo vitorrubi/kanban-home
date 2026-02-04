@@ -1,21 +1,73 @@
 export type Database = {
   public: {
     Tables: {
+      organizations: {
+        Row: {
+          id: string;
+          name: string;
+          slug: string;
+          owner_id: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          slug: string;
+          owner_id: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          slug?: string;
+          owner_id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      organization_members: {
+        Row: {
+          id: string;
+          organization_id: string;
+          user_id: string;
+          role: 'owner' | 'admin' | 'member';
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          user_id: string;
+          role?: 'owner' | 'admin' | 'member';
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          user_id?: string;
+          role?: 'owner' | 'admin' | 'member';
+          created_at?: string;
+        };
+      };
       boards: {
         Row: {
           id: string;
+          organization_id: string;
           title: string;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
+          organization_id: string;
           title?: string;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
+          organization_id?: string;
           title?: string;
           created_at?: string;
           updated_at?: string;

@@ -38,13 +38,13 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
       <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Sign In</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-6">Entrar</h1>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email
-            </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                E-mail
+              </label>
             <Input
               type="email"
               value={email}
@@ -55,9 +55,9 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Senha
+              </label>
             <Input
               type="password"
               value={password}
@@ -69,17 +69,17 @@ export default function LoginPage() {
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign In'}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Entrando...' : 'Entrar'}
           </Button>
         </form>
 
-        <p className="text-sm text-gray-600 text-center mt-4">
-          Don't have an account?{' '}
-          <Link href="/auth/signup" className="text-indigo-600 hover:underline">
-            Sign up
-          </Link>
-        </p>
+          <p className="text-sm text-gray-600 text-center mt-4">
+            Ainda não tem uma conta?{' '}
+            <Link href="/auth/signup" className="text-indigo-600 hover:underline">
+              Criar conta
+            </Link>
+          </p>
       </div>
     </main>
   );

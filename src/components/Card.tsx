@@ -39,7 +39,7 @@ export function Card({ card, onDelete }: CardProps) {
             <p className="text-xs text-gray-600 mt-1">{card.description}</p>
           )}
           {dueDate && (
-            <p className="text-xs text-gray-500 mt-2">Due: {dueDate}</p>
+            <p className="text-xs text-gray-500 mt-2">Prazo: {dueDate}</p>
           )}
         </div>
         <Button
