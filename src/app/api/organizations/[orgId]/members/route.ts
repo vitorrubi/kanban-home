@@ -3,9 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { orgId: string } }
+  { params }: { params: Promise<{ orgId: string }> }
 ) {
   try {
+    const { orgId } = await params;
     const supabase = await createServerSupabaseClient();
     const {
       data: { user },
@@ -19,7 +20,7 @@ export async function POST(
     const { data: member, error: memberError } = await supabase
       .from('organization_members')
       .select('role')
-      .eq('organization_id', params.orgId)
+      .eq('organization_id', orgId)
       .eq('user_id', user.id)
       .single();
 
@@ -45,7 +46,7 @@ export async function POST(
         error,
       })) as any;
 
-    const authUser = users?.users?.find((u) => u.email === email);
+    const authUser = users?.users?.find((u: any) => u.email === email);
     if (!authUser) {
       return NextResponse.json(
         { error: 'User not found' },
@@ -58,7 +59,7 @@ export async function POST(
       .from('organization_members')
       .insert([
         {
-          organization_id: params.orgId,
+          organization_id: orgId,
           user_id: authUser.id,
           role,
         },
@@ -80,9 +81,10 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { orgId: string } }
+  { params }: { params: Promise<{ orgId: string }> }
 ) {
   try {
+    const { orgId } = await params;
     const supabase = await createServerSupabaseClient();
     const {
       data: { user },
@@ -106,7 +108,7 @@ export async function DELETE(
     const { data: organization, error: orgError } = await supabase
       .from('organizations')
       .select('owner_id')
-      .eq('id', params.orgId)
+      .eq('id', orgId)
       .single();
 
     if (orgError || organization.owner_id !== user.id) {
@@ -117,7 +119,7 @@ export async function DELETE(
       .from('organization_members')
       .delete()
       .eq('id', memberId)
-      .eq('organization_id', params.orgId);
+      .eq('organization_id', orgId);
 
     if (error) throw error;
 

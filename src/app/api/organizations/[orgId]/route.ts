@@ -43,7 +43,7 @@ export async function GET(
     // Check if user has access
     const hasAccess =
       organization.owner_id === user.id ||
-      organization.organization_members?.some((m) => m.user_id === user.id);
+      organization.organization_members?.some((m: any) => m.user_id === user.id);
 
     if (!hasAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
