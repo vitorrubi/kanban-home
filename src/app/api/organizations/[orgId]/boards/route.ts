@@ -3,9 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { orgId: string } }
+  { params }: { params: Promise<{ orgId: string }> }
 ) {
   try {
+    const { orgId } = await params;
     const supabase = await createServerSupabaseClient();
     const {
       data: { user },
@@ -19,7 +20,7 @@ export async function POST(
     const { data: member, error: memberError } = await supabase
       .from('organization_members')
       .select('role')
-      .eq('organization_id', params.orgId)
+      .eq('organization_id', orgId)
       .eq('user_id', user.id)
       .single();
 
@@ -42,7 +43,7 @@ export async function POST(
       .from('boards')
       .insert([
         {
-          organization_id: params.orgId,
+          organization_id: orgId,
           title,
         },
       ])
