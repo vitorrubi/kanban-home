@@ -258,7 +258,7 @@ export default function OrganizationPage() {
                     {organization.organization_members.map((member) => (
                       <TableRow key={member.id}>
                         <TableCell className="font-medium">
-                          {member.user_id}
+                          {user.email}
                         </TableCell>
                         <TableCell>
                           <span className="inline-block px-2 py-1 rounded text-sm bg-gray-100">
