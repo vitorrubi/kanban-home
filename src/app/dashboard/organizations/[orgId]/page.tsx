@@ -83,8 +83,8 @@ export default function OrganizationPage() {
     },
   });
 
-  const handleAddMember = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddMember = async (e?: React.FormEvent, inviteUser = false) => {
+    if (e) e.preventDefault();
     try {
       const response = await fetch(`/api/organizations/${orgId}/members`, {
         method: 'POST',
@@ -92,18 +92,33 @@ export default function OrganizationPage() {
         body: JSON.stringify({
           email: newMemberEmail,
           role: newMemberRole,
+          invite: inviteUser,
         }),
       });
 
       if (response.ok) {
+        if (inviteUser) {
+          alert('Convite enviado com sucesso e usuário adicionado à organização!');
+        }
         setNewMemberEmail('');
         setNewMemberRole('member');
         setIsAddMemberOpen(false);
         refetch();
       } else {
-        console.error('Failed to add member');
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 404 && data.error === 'User not found' && !inviteUser) {
+          if (window.confirm('Este usuário não possui conta no sistema. Deseja enviar um convite para o email dele criar uma conta?')) {
+            await handleAddMember(undefined, true);
+          }
+          return;
+        }
+
+        alert(`Erro ao adicionar membro: ${data.error || 'Erro desconhecido'}`);
+        console.error('Failed to add member', data);
       }
     } catch (error) {
+      alert(`Erro inesperado: ${error}`);
       console.error('Error adding member:', error);
     }
   };
@@ -257,16 +272,16 @@ export default function OrganizationPage() {
                   <TableBody>
                     {organization.organization_members.map((member) => (
                       <TableRow key={member.id}>
-                        <TableCell className="font-medium">
-                          {user.email}
+                        <TableCell className="font-medium text-xs">
+                          {member.user_id === user?.id ? user?.email : member.user_id}
                         </TableCell>
                         <TableCell>
                           <span className="inline-block px-2 py-1 rounded text-sm bg-gray-100">
                             {member.role === 'owner'
                               ? 'Proprietário'
                               : member.role === 'admin'
-                              ? 'Admin'
-                              : 'Membro'}
+                                ? 'Admin'
+                                : 'Membro'}
                           </span>
                         </TableCell>
                         <TableCell className="text-right">

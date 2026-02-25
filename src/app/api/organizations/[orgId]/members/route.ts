@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(
   request: NextRequest,
@@ -38,8 +39,26 @@ export async function POST(
       );
     }
 
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json(
+        { error: 'SUPABASE_SERVICE_ROLE_KEY is missing in .env.local to use the admin API' },
+        { status: 500 }
+      );
+    }
+
+    const adminSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+
     // Get user by email from auth using admin API
-    const { data: users, error: usersError } = await supabase.auth.admin
+    const { data: users, error: usersError } = await adminSupabase.auth.admin
       .listUsers()
       .catch((error) => ({
         data: null,
@@ -47,11 +66,25 @@ export async function POST(
       })) as any;
 
     const authUser = users?.users?.find((u: any) => u.email === email);
+    let finalUserId = authUser?.id;
+
     if (!authUser) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      if (body.invite) {
+        const { data: inviteData, error: inviteError } = await adminSupabase.auth.admin.inviteUserByEmail(email);
+
+        if (inviteError || !inviteData?.user) {
+          return NextResponse.json(
+            { error: `Failed to send invite: ${inviteError?.message || 'Unknown error'}` },
+            { status: 500 }
+          );
+        }
+        finalUserId = inviteData.user.id;
+      } else {
+        return NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        );
+      }
     }
 
     // Add member to organization
@@ -60,7 +93,7 @@ export async function POST(
       .insert([
         {
           organization_id: orgId,
-          user_id: authUser.id,
+          user_id: finalUserId,
           role,
         },
       ])
